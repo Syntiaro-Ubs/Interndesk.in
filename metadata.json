@@ -1,6 +1,0 @@
-{
-  "name": "InternDesk",
-  "description": "Premium IT Development, consulting, and virtual internship training platform, previously known as Zidio.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
