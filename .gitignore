@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example
+*.log
+server/private/
+server/data/db.json
