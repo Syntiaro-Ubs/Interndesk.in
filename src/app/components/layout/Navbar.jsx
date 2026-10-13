@@ -56,7 +56,7 @@ function Navbar({ view, setView, userRole, setAuthParams, userInfo, logout }) {
     <nav className="sticky top-0 z-50 hidden border-b border-[#e0dfdc] bg-white shadow-xs md:block">
       <div className="mx-auto h-[56px] max-w-[1128px] px-4 md:px-6">
         <div className="flex h-full w-full items-center justify-between">
-          <button type="button" onClick={() => { navigate(isStudent ? "student-home" : isCompany ? "company-portal" : "landing"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center" aria-label="InternDesk home">
+          <button type="button" onClick={() => { navigate("landing"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center" aria-label="InternDesk home">
             <img src={logoUrl} alt="InternDesk" className="h-11" />
           </button>
           {userRole === null ? (
@@ -77,6 +77,22 @@ function Navbar({ view, setView, userRole, setAuthParams, userInfo, logout }) {
               {navItem("notifications", Bell, "Notifications", unreadCount)}
               {navItem("resume-builder", ScrollText, "Resume")}
               <UserMenu displayName={displayName} initial={initial} userInfo={userInfo} navigate={navigate} logout={logout} open={userMenuOpen} setOpen={setUserMenuOpen} student />
+            </div>
+          ) : isCompany ? (
+            <div className="flex h-full items-center gap-1 xl:gap-2">
+              {navItem("landing", Home, "Home")}
+              {navItem("search", Briefcase, "Internships")}
+              {navItem("companies", Building2, "Companies")}
+              {navItem("career-resources", FileText, "Articles")}
+              <div className="mx-2 h-8 w-px bg-[#e0dfdc]" />
+              <button
+                type="button"
+                onClick={() => navigate("company-portal")}
+                className="rounded-full bg-[#0a66c2] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#004182] transition-colors cursor-pointer"
+              >
+                Employer Portal
+              </button>
+              <UserMenu displayName={displayName} initial={initial} userInfo={userInfo} navigate={navigate} logout={logout} open={userMenuOpen} setOpen={setUserMenuOpen} student={false} />
             </div>
           ) : null}
         </div>

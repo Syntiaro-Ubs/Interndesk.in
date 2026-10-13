@@ -69,7 +69,6 @@ function useCountdown(initial) {
 function OtpScreen({
   type,
   target,
-  devOtp,
   onVerify,
   onVerified,
   onResend,
@@ -140,24 +139,6 @@ function OtpScreen({
     /* @__PURE__ */ React.createElement("p", { className: "text-sm text-muted-foreground mb-4" },
       verified ? "Your email has been verified. Redirecting..." : /* @__PURE__ */ React.createElement(React.Fragment, null, "We've sent a 6-digit verification code to:", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("span", { className: "font-medium text-foreground" }, target))
     ),
-    devOtp && !verified && /* @__PURE__ */ React.createElement("div", {
-      className: "mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-2 text-left"
-    },
-      /* @__PURE__ */ React.createElement("div", null,
-        /* @__PURE__ */ React.createElement("span", { className: "font-semibold block text-[11px] uppercase tracking-wider text-amber-600 dark:text-amber-400" }, "Dev Mode Code"),
-        /* @__PURE__ */ React.createElement("span", { className: "font-mono text-base tracking-widest font-bold" }, devOtp)
-      ),
-      /* @__PURE__ */ React.createElement("button", {
-        type: "button",
-        onClick: () => {
-          setValue(devOtp);
-          setError("");
-          lastAttemptedOtpRef.current = "";
-          doVerify(devOtp);
-        },
-        className: "px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-100 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-      }, "Auto-fill & Verify")
-    ),
     !verified && /* @__PURE__ */ React.createElement("form", { onSubmit: handleVerifySubmit, className: "space-y-4" },
       /* @__PURE__ */ React.createElement("div", { className: "flex justify-center my-3" },
         /* @__PURE__ */ React.createElement(OTPInput, {
@@ -217,7 +198,6 @@ function AuthPage({
   const [designation, setDesignation] = useState("");
   const [companyDomain, setCompanyDomain] = useState("");
   const [domainError, setDomainError] = useState("");
-  const [devOtp, setDevOtp] = useState("");
   const [googleModalOpen, setGoogleModalOpen] = useState(false);
   const [googleEmailInput, setGoogleEmailInput] = useState("");
   const [googleError, setGoogleError] = useState("");
@@ -225,7 +205,6 @@ function AuthPage({
   if (step === "email-verification") return React.createElement("div", { className: "min-h-screen bg-background flex items-center px-4" }, React.createElement(OtpScreen, {
     type: "email",
     target: email,
-    devOtp,
     onVerify: async (code) => {
       const result = await api.verifyEmail({
         email,
@@ -256,12 +235,7 @@ function AuthPage({
     },
     onResend: async () => {
       const res = await api.resendVerificationCode(email);
-      if (res?.devOtp) {
-        setDevOtp(res.devOtp);
-        toast.info(`New Dev Mode Verification Code: ${res.devOtp}`, { duration: 6000 });
-      } else {
-        toast.success("New verification code sent successfully.", { duration: 4000 });
-      }
+      toast.success("New verification code sent to your email.", { duration: 4000 });
       return res;
     },
     onBack: () => setStep("form")
@@ -303,13 +277,8 @@ function AuthPage({
             return;
           }
         }
-        const res = await api.sendVerificationCode(email);
-        if (res?.devOtp) {
-          setDevOtp(res.devOtp);
-          toast.info(`Dev Mode Verification Code: ${res.devOtp}`, { duration: 8000 });
-        } else {
-          toast.success("Verification code sent. Check your email.", { duration: 4000 });
-        }
+        await api.sendVerificationCode(email);
+        toast.success(`Verification code sent to ${email}. Please check your inbox.`, { duration: 5000 });
         setStep("email-verification");
       } else {
         const result = await api.login({ email, password, role });

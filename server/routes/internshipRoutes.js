@@ -5,6 +5,7 @@ import {
   createInternship,
   updateInternship,
   closeInternship,
+  deleteInternship,
   getCompanyInternships,
   getInternshipFilters
 } from '../controllers/internshipController.js';
@@ -18,5 +19,6 @@ router.get('/:id', getInternshipById);
 router.post('/', createInternship);
 router.put('/:id', updateInternship);
 router.post('/:id/close', closeInternship);
+router.delete('/:id', deleteInternship);
 
 export default router;

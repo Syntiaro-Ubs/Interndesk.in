@@ -132,6 +132,20 @@ const Internship = sequelize.define('Internship', {
   applicants: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  minCgpa: {
+    type: DataTypes.FLOAT,
+    allowNull: true
+  },
+  selectionSteps: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      try { return JSON.parse(this.getDataValue('selectionSteps') || '[]'); } catch { return []; }
+    },
+    set(val) {
+      this.setDataValue('selectionSteps', JSON.stringify(Array.isArray(val) ? val : []));
+    }
   }
 }, {
   tableName: 'internships',

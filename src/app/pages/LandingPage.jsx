@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Search, MapPin, Building2, ChevronRight, ArrowRight, GraduationCap, BookOpen, Users, Play, ChevronDown, ChevronUp, CheckCircle, Home as HomeIcon, Briefcase, BarChart3, Glasses, Heart, UserCheck, PenTool, DollarSign, TrendingUp, Settings, Code, Sparkles, CheckCircle2, Star, ShieldCheck } from "lucide-react";
 import { api } from "../api";
 import heroBannerImg from "../../assets/home_hero_banner.jpg";
-function LandingPage({ setView, setAuthParams }) {
+function LandingPage({ setView, setAuthParams, onSelectInternship }) {
   const [internships, setInternships] = useState([]);
   const [internshipError, setInternshipError] = useState("");
   const [internshipsLoading, setInternshipsLoading] = useState(true);
@@ -11,12 +11,37 @@ function LandingPage({ setView, setAuthParams }) {
   const [locationQuery, setLocationQuery] = useState("");
   const [experienceOpen, setExperienceOpen] = useState(false);
   const [selectedExperience, setSelectedExperience] = useState("");
-  const [showMoreTopics, setShowMoreTopics] = useState(false);
+
   useEffect(() => {
     let active = true;
-    api.internships().then((items) => { if (active) setInternships(items); }).catch((error) => { if (active) setInternshipError(error.message || "Could not load internships."); }).finally(() => { if (active) setInternshipsLoading(false); });
-    return () => { active = false; };
+    const fetchInternships = () => {
+      setInternshipsLoading(true);
+      api.internships()
+        .then((items) => {
+          if (active) {
+            setInternships(items || []);
+            setInternshipError("");
+          }
+        })
+        .catch((error) => {
+          if (active) setInternshipError(error.message || "Could not load internships.");
+        })
+        .finally(() => {
+          if (active) setInternshipsLoading(false);
+        });
+    };
+
+    fetchInternships();
+    const handleSync = () => fetchInternships();
+    window.addEventListener("interndesk:sync", handleSync);
+    window.addEventListener("storage", handleSync);
+    return () => {
+      active = false;
+      window.removeEventListener("interndesk:sync", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
   }, []);
+
   const experienceOptions = [
     "All Experience Levels",
     "Entry Level / Fresher",
@@ -25,44 +50,35 @@ function LandingPage({ setView, setAuthParams }) {
     "Final Year Student",
     "Recent Graduate"
   ];
+
   const categoryGroups = (category) => {
     const groups = new Map();
-    internships.filter((job) => job.category === category).forEach((job) => {
-      const name = job.department || job.category;
-      const group = groups.get(name) || { name, count: 0, skills: new Set() };
-      group.count += 1;
-      (job.skills || []).forEach((skill) => group.skills.add(skill));
-      groups.set(name, group);
-    });
-    return [...groups.values()].map((group) => ({ ...group, skills: [...group.skills], icon: Briefcase })).sort((a, b) => b.count - a.count);
+    internships
+      .filter((job) => (job.category || "").toUpperCase() === category.toUpperCase())
+      .forEach((job) => {
+        const name = job.department || job.category;
+        const group = groups.get(name) || { name, count: 0, skills: new Set() };
+        group.count += 1;
+        (job.skills || []).forEach((skill) => group.skills.add(skill));
+        groups.set(name, group);
+      });
+    return [...groups.values()]
+      .map((group) => ({ ...group, skills: [...group.skills], icon: Briefcase }))
+      .sort((a, b) => b.count - a.count);
   };
+
   const itCategories = categoryGroups("IT");
   const nonItCategories = categoryGroups("NON IT");
   const heroCategories = [...new Set(internships.map((job) => job.department || job.category).filter(Boolean))].slice(0, 5).map((label) => ({ label, icon: Briefcase }));
-  const mainTopics = [];
-  const extraTopics = [];
-  const displayedTopics = showMoreTopics ? [...mainTopics, ...extraTopics] : mainTopics;
   const quickSearches = [...itCategories, ...nonItCategories].slice(0, 3).map((item) => ({ label: item.name, count: `${item.count} open internships` }));
-  const featuredCourses = [
-    {
-      title: "Full-Stack Web Development & Modern API Design",
-      provider: "InternDesk Engineering Academy",
-      learners: "14.2k learners",
-      image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=500&h=300&fit=crop&auto=format"
-    },
-    {
-      title: "Technical Interview Mastery: Data Structures & Algorithms",
-      provider: "Campus Placement Prep",
-      learners: "22.8k learners",
-      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500&h=300&fit=crop&auto=format"
-    },
-    {
-      title: "Applied Machine Learning & Python Data Science",
-      provider: "AI Career Labs",
-      learners: "9.5k learners",
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&h=300&fit=crop&auto=format"
-    }
-  ];
+
+  const filteredTrackJobs = internships.filter((job) => {
+    if (activeCategoryTab === "ALL") return true;
+    const cat = (job.category || "").toUpperCase();
+    if (activeCategoryTab === "IT") return cat === "IT";
+    if (activeCategoryTab === "NON IT") return cat === "NON IT";
+    return true;
+  });
   return /* @__PURE__ */ React.createElement("div", { className: "bg-[#f3f2ef] min-h-screen text-[#1f2937] font-sans antialiased selection:bg-[#0a66c2]/20" },
 
   /* â”€â”€ HERO SECTION WITH BANNER BACKGROUND â”€â”€ */
@@ -203,29 +219,119 @@ function LandingPage({ setView, setAuthParams }) {
     },
     /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-sm text-foreground group-hover:text-[#0a66c2] transition-colors" }, item.label), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-black/50 mt-0.5" }, item.count)),
     /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-full bg-[#f3f2ef] group-hover:bg-[#0a66c2] text-black/50 group-hover:text-white flex items-center justify-center transition-colors flex-shrink-0" }, /* @__PURE__ */ React.createElement(ArrowRight, { className: "w-4 h-4" }))
-  ))), /* @__PURE__ */ React.createElement("div", { className: "pt-6 border-t border-[#e0dfdc]" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "text-xl font-bold text-foreground" }, "Browse Opportunities by Track"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-black/60 mt-0.5" }, "Explore specialized roles across IT and NON IT sectors")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-1 bg-white rounded-full border border-[#e0dfdc] self-start" }, /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { className: "pt-6 border-t border-[#e0dfdc]" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "text-xl font-bold text-foreground" }, "Browse Opportunities by Track"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-black/60 mt-0.5" }, "Explore specialized roles across IT and NON IT sectors")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-1 bg-white rounded-full border border-[#e0dfdc] self-start flex-wrap gap-1" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setActiveCategoryTab("IT"),
-      className: `px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${activeCategoryTab === "IT" ? "bg-[#0a66c2] text-white shadow-xs" : "text-black/60 hover:text-foreground"}`
+      className: `px-4 sm:px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${activeCategoryTab === "IT" ? "bg-[#0a66c2] text-white shadow-xs" : "text-black/60 hover:text-foreground"}`
     },
-    "IT Categories"
+    `IT Categories (${internships.filter((j) => (j.category || "").toUpperCase() === "IT").length})`
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setActiveCategoryTab("NON IT"),
-      className: `px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${activeCategoryTab === "NON IT" ? "bg-[#0a66c2] text-white shadow-xs" : "text-black/60 hover:text-foreground"}`
+      className: `px-4 sm:px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${activeCategoryTab === "NON IT" ? "bg-[#0a66c2] text-white shadow-xs" : "text-black/60 hover:text-foreground"}`
     },
-    "NON IT Categories"
-  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" }, (activeCategoryTab === "IT" ? itCategories : nonItCategories).map((cat) => /* @__PURE__ */ React.createElement(
+    `NON IT Categories (${internships.filter((j) => (j.category || "").toUpperCase() === "NON IT").length})`
+  ), /* @__PURE__ */ React.createElement(
     "button",
     {
-      key: cat.name,
-      onClick: () => setView("search"),
+      onClick: () => setActiveCategoryTab("ALL"),
+      className: `px-4 sm:px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${activeCategoryTab === "ALL" ? "bg-[#0a66c2] text-white shadow-xs" : "text-black/60 hover:text-foreground"}`
+    },
+    `All Roles (${internships.length})`
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" }, filteredTrackJobs.length === 0 ? /* @__PURE__ */ React.createElement(
+    "div",
+    { className: "col-span-full py-12 px-6 bg-white border border-[#e0dfdc] rounded-2xl text-center" },
+    /* @__PURE__ */ React.createElement(Briefcase, { className: "w-10 h-10 text-black/30 mx-auto mb-3" }),
+    /* @__PURE__ */ React.createElement("h4", { className: "text-base font-semibold text-foreground mb-1" }, `No ${activeCategoryTab === "ALL" ? "" : activeCategoryTab} internships posted yet`),
+    /* @__PURE__ */ React.createElement("p", { className: "text-xs text-black/60 max-w-md mx-auto mb-4" }, "Opportunities posted from the employer dashboard will appear dynamically here in real-time."),
+    activeCategoryTab !== "ALL" && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setActiveCategoryTab("ALL"),
+        className: "px-4 py-2 bg-[#0a66c2] text-white rounded-full text-xs font-semibold hover:bg-[#004182] transition-colors cursor-pointer"
+      },
+      "View All Opportunities"
+    )
+  ) : filteredTrackJobs.map((job) => /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      key: job.id,
+      onClick: () => {
+        if (onSelectInternship) onSelectInternship(job);
+        else setView("search");
+      },
       className: "bg-white border border-[#e0dfdc] rounded-2xl p-5 text-left hover:border-[#0a66c2] hover:shadow-md transition-all group cursor-pointer flex flex-col justify-between"
     },
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 bg-[#0a66c2]/10 rounded-xl flex items-center justify-center mb-3 group-hover:bg-[#0a66c2] transition-colors" }, /* @__PURE__ */ React.createElement(cat.icon, { className: "w-5 h-5 text-[#0a66c2] group-hover:text-white transition-colors" })), /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-foreground text-sm mb-1 group-hover:text-[#0a66c2] transition-colors" }, cat.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-black/50 mb-3" }, cat.count, " open internships"), cat.skills && /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, cat.skills.slice(0, 3).map((skill) => /* @__PURE__ */ React.createElement("span", { key: skill, className: "px-2 py-0.5 bg-[#f3f2ef] rounded text-[10px] text-black/70 font-medium" }, skill)))),
-    /* @__PURE__ */ React.createElement("div", { className: "mt-4 pt-3 border-t border-[#f3f2ef] flex items-center justify-between text-xs font-semibold text-[#0a66c2]" }, /* @__PURE__ */ React.createElement("span", null, "View ", activeCategoryTab, " Roles"), /* @__PURE__ */ React.createElement(ArrowRight, { className: "w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" }))
+    /* @__PURE__ */ React.createElement("div", null,
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-3" },
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" },
+          /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              className: "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-xs flex-shrink-0 shadow-2xs",
+              style: { backgroundColor: job.logoColor || "#0a66c2" }
+            },
+            job.logo || (job.company ? job.company.slice(0, 2).toUpperCase() : "ID")
+          ),
+          /* @__PURE__ */ React.createElement("div", { className: "min-w-0" },
+            /* @__PURE__ */ React.createElement("p", { className: "text-xs font-medium text-black/60 truncate" }, job.company || "Company"),
+            /* @__PURE__ */ React.createElement(
+              "span",
+              { className: "inline-block text-[10px] font-semibold text-[#0a66c2] bg-[#0a66c2]/10 px-2 py-0.5 rounded-full mt-0.5 truncate max-w-[130px]" },
+              job.department || `${job.category || "General"} Track`
+            )
+          )
+        ),
+        /* @__PURE__ */ React.createElement(
+          "span",
+          { className: "text-[10px] text-black/50 bg-[#f3f2ef] px-2 py-0.5 rounded font-medium flex-shrink-0" },
+          job.posted || job.ago || "Recent"
+        )
+      ),
+      /* @__PURE__ */ React.createElement(
+        "h4",
+        { className: "font-bold text-foreground text-sm mb-1.5 group-hover:text-[#0a66c2] transition-colors line-clamp-2" },
+        job.title
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-3 text-xs text-black/60" },
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 truncate" },
+          /* @__PURE__ */ React.createElement(MapPin, { className: "w-3.5 h-3.5 text-black/40 flex-shrink-0" }),
+          /* @__PURE__ */ React.createElement("span", { className: "truncate" }, job.location || "Remote"),
+          /* @__PURE__ */ React.createElement("span", { className: "text-black/30" }, "·"),
+          /* @__PURE__ */ React.createElement("span", { className: "font-medium text-black/80" }, job.workMode || job.mode || "Hybrid")
+        ),
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-xs pt-1" },
+          /* @__PURE__ */ React.createElement(
+            "span",
+            { className: "font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100" },
+            job.stipend || (job.stipendAmount ? `₹${Number(job.stipendAmount).toLocaleString("en-IN")}/mo` : "Paid")
+          ),
+          /* @__PURE__ */ React.createElement("span", { className: "text-black/50 text-[11px] font-medium" }, job.duration || "3 Months")
+        )
+      ),
+      Array.isArray(job.skills) && job.skills.length > 0 && /* @__PURE__ */ React.createElement(
+        "div",
+        { className: "flex flex-wrap gap-1 mt-2" },
+        job.skills.slice(0, 3).map((skill) => /* @__PURE__ */ React.createElement(
+          "span",
+          { key: skill, className: "px-2 py-0.5 bg-[#f3f2ef] rounded text-[10px] text-black/70 font-medium" },
+          skill
+        )),
+        job.skills.length > 3 && /* @__PURE__ */ React.createElement(
+          "span",
+          { className: "px-1.5 py-0.5 bg-[#f3f2ef] rounded text-[10px] text-black/50 font-medium" },
+          `+${job.skills.length - 3}`
+        )
+      )
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      { className: "mt-4 pt-3 border-t border-[#f3f2ef] flex items-center justify-between text-xs font-semibold text-[#0a66c2]" },
+      /* @__PURE__ */ React.createElement("span", null, "View Opportunity & Apply"),
+      /* @__PURE__ */ React.createElement(ArrowRight, { className: "w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" })
+    )
   )))))),
 
   /* â”€â”€ HOW INTERNDESK WORKS & SUCCESS HIGHLIGHTS (NEW SECTION) â”€â”€ */
@@ -313,30 +419,6 @@ function LandingPage({ setView, setAuthParams }) {
       alt: "Recruiters hiring candidates",
       className: "rounded-2xl object-cover shadow-sm w-full max-h-[280px] border border-[#e0dfdc]"
     }
-  ))))), /* @__PURE__ */ React.createElement("section", { className: "py-6 bg-[#f3f2ef] border-b border-[#e0dfdc]" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-[1128px] mx-auto px-4 sm:px-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl sm:text-3xl font-extralight text-foreground" }, "Learn the skills you need to succeed"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-black/60 mt-1" }, "Choose from expert-led courses on interview preparation, coding, and financial analysis")), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setView("career-resources"),
-      className: "text-sm font-semibold text-[#00BFEA] hover:underline flex items-center gap-1 self-start cursor-pointer"
-    },
-    "Explore Learning ",
-    /* @__PURE__ */ React.createElement(ChevronRight, { className: "w-4 h-4" })
-  )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-6" }, featuredCourses.map((course) => /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      key: course.title,
-      onClick: () => setView("career-resources"),
-      className: "bg-white border border-[#e0dfdc] rounded-2xl overflow-hidden hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
-    },
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "relative h-44 overflow-hidden bg-black/5" }, /* @__PURE__ */ React.createElement(
-      "img",
-      {
-        src: course.image,
-        alt: course.title,
-        className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-      }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-full bg-white/90 text-[#0a66c2] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform" }, /* @__PURE__ */ React.createElement(Play, { className: "w-5 h-5 ml-0.5 fill-[#0a66c2]" })))), /* @__PURE__ */ React.createElement("div", { className: "p-5 space-y-1.5" }, /* @__PURE__ */ React.createElement("h3", { className: "font-semibold text-base text-foreground group-hover:text-[#0a66c2] transition-colors line-clamp-2" }, course.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-black/60 font-medium" }, course.provider))),
-    /* @__PURE__ */ React.createElement("div", { className: "px-5 pb-5 pt-1 text-xs text-black/50 font-medium flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Users, { className: "w-3.5 h-3.5 text-[#0a66c2]" }), /* @__PURE__ */ React.createElement("span", null, course.learners))
   ))))), /* @__PURE__ */ React.createElement("section", { className: "py-6 bg-white border-b border-[#e0dfdc]" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-[1128px] mx-auto px-4 sm:px-6" }, /* @__PURE__ */ React.createElement("div", { className: "text-center max-w-2xl mx-auto mb-6 space-y-2" }, /* @__PURE__ */ React.createElement("h2", { className: "text-3xl font-extralight text-foreground" }, "Who is InternDesk for?"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-black/60" }, "Anyone looking to navigate their professional life")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-6" }, /* @__PURE__ */ React.createElement("div", { className: "p-6 bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl flex flex-col justify-between space-y-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-2xl bg-[#0a66c2]/10 text-[#0a66c2] flex items-center justify-center mb-5" }, /* @__PURE__ */ React.createElement(GraduationCap, { className: "w-6 h-6" })), /* @__PURE__ */ React.createElement("h3", { className: "font-semibold text-xl text-foreground mb-2" }, "Students & Graduates"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-black/60 leading-relaxed" }, "Discover thousands of verified internships across engineering, business, design, and marketing. Build a professional resume and apply directly.")), /* @__PURE__ */ React.createElement(
     "button",
     {

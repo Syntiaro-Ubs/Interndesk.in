@@ -46,7 +46,7 @@ function MobileHeader({
     };
   }, [userRole]);
 
-  const homeView = userRole === "student" ? "student-home" : userRole === "company" ? "company-portal" : "landing";
+  const homeView = "landing";
   const studentName = userInfo && (userInfo.firstName || userInfo.lastName) ? `${userInfo.firstName} ${userInfo.lastName}`.trim() : "My Profile";
   const studentInitials = userInfo?.firstName ? userInfo.firstName[0].toUpperCase() : "S";
   const companyName = userInfo?.companyName || "Your Company";
@@ -63,7 +63,7 @@ function MobileHeader({
     setDrawerOpen(false);
     setProfileMenuOpen(false);
   };
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "md:hidden sticky top-0 z-50 bg-card border-b border-border shadow-sm px-4 h-14 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setView(homeView), className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("img", { src: logoUrl, alt: "InternDesk", className: "h-6" })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, userRole === "company" ? /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "md:hidden sticky top-0 z-50 bg-card border-b border-border shadow-sm px-4 h-14 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setView("landing"), className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("img", { src: logoUrl, alt: "InternDesk", className: "h-6" })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, userRole === "company" ? /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setDrawerOpen(true),

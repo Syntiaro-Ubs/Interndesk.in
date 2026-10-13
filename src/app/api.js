@@ -50,7 +50,7 @@ function saveCurrentUser(user) {
 
 export function getCurrentUser() {
   try {
-    const raw = localStorage.getItem(USER_KEY);
+    const raw = localStorage.getItem(USER_KEY) || localStorage.getItem('id_info');
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
@@ -213,6 +213,8 @@ export const api = {
   updateInternship: async (id, body) => put(`/internships/${id}`, body),
 
   closeInternship: async (id) => post(`/internships/${id}/close`, {}),
+
+  deleteInternship: async (id) => del(`/internships/${id}`),
 
   companyInternships: async () => get('/internships/company'),
 

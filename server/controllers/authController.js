@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import { User, Company } from '../models/index.js';
-import { generateOtp, storeOtp, verifyOtp as checkOtp, sendOtpEmail } from '../utils/emailService.js';
+import { generateOtp, storeOtp, verifyOtp as checkOtp, sendOtpEmail, isEmailConfigured } from '../utils/emailService.js';
 
 function getCompanyLogoColor(name = '') {
   const colors = ['#0A66C2', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6', '#14B8A6', '#F97316'];
@@ -83,7 +83,18 @@ export const register = async (req, res) => {
     });
 
     if (!created) {
-      await user.update({ role, companyId, companyName: registeredCompanyName });
+      await user.update({
+        role,
+        password: password || user.password,
+        name: `${firstName} ${lastName}`.trim() || user.name,
+        firstName: firstName || user.firstName,
+        lastName: lastName || user.lastName,
+        companyId: companyId || user.companyId,
+        companyName: registeredCompanyName || user.companyName,
+        companyDomain: companyDomain || user.companyDomain,
+        designation: designation || user.designation,
+        profileComplete: true
+      });
     }
 
     const userData = {
@@ -221,32 +232,28 @@ export const sendOtp = async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email is required' });
     const emailNorm = email.toLowerCase().trim();
 
+    if (!isEmailConfigured()) {
+      return res.status(503).json({
+        error: 'Email service is not configured. Please add SMTP or Gmail credentials in server/.env to send verification codes.'
+      });
+    }
+
     const otp = generateOtp();
     storeOtp(emailNorm, otp);
 
-    let sent = false;
-    if (process.env.GMAIL_USER && process.env.GMAIL_USER !== 'your_gmail@gmail.com' && process.env.GMAIL_APP_PASSWORD !== 'your_16_char_app_password') {
-      try {
-        await sendOtpEmail(emailNorm, otp);
-        sent = true;
-      } catch (err) {
-        console.error('SMTP sendMail failed, switching to dev console output:', err.message);
-      }
+    try {
+      await sendOtpEmail(emailNorm, otp);
+      console.log(`[AUTH] Verification OTP email successfully sent to: ${emailNorm}`);
+      return res.json({
+        success: true,
+        message: `Verification code sent to ${emailNorm}. Please check your email inbox.`
+      });
+    } catch (mailErr) {
+      console.error(`[AUTH] SMTP delivery error to ${emailNorm}:`, mailErr.message);
+      return res.status(500).json({
+        error: `Could not send verification email: ${mailErr.message}. Please check your email credentials in server/.env.`
+      });
     }
-
-    if (!sent) {
-      console.log(`\n==================================================`);
-      console.log(`🔑 DEV MODE OTP FOR ${emailNorm}: [ ${otp} ]`);
-      console.log(`==================================================\n`);
-    }
-
-    return res.json({
-      success: true,
-      message: sent
-        ? `Verification code sent to ${emailNorm}`
-        : `Verification code generated. (Dev Mode OTP: ${otp})`,
-      devOtp: !sent ? otp : undefined
-    });
   } catch (err) {
     console.error('Send OTP error:', err);
     return res.status(500).json({ error: err.message || 'Failed to send verification code' });

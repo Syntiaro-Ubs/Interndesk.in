@@ -9,7 +9,7 @@ function ManageInternships({
   setCompanyJobs,
   setSection,
   setSelectedInternship,
-  setEditingPost
+  onEditInternship
 }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -27,6 +27,7 @@ function ManageInternships({
         await api.updateInternship(job.id, { status: newStatus });
       }
       setCompanyJobs((prev) => prev.map((row) => row.id === job.id ? { ...row, status: newStatus } : row));
+      window.dispatchEvent(new CustomEvent("interndesk:sync"));
       toast.success(`Internship status updated to "${newStatus}". All applied students have been notified!`);
     } catch (error) {
       toast.error(error.message || "Could not update internship status.");
@@ -34,6 +35,17 @@ function ManageInternships({
   };
   const closeJob = async (job) => {
     updateJobStatus(job, "Closed");
+  };
+  const deleteJob = async (job) => {
+    if (!window.confirm(`Are you sure you want to delete "${job.title}"?`)) return;
+    try {
+      await api.deleteInternship(job.id);
+      setCompanyJobs((prev) => prev.filter((row) => row.id !== job.id));
+      window.dispatchEvent(new CustomEvent("interndesk:sync"));
+      toast.success(`Internship "${job.title}" was deleted.`);
+    } catch (error) {
+      toast.error(error.message || "Could not delete internship.");
+    }
   };
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-5" }, /* @__PURE__ */ React.createElement("h1", { className: "text-xl font-medium text-foreground" }, "Internships"), /* @__PURE__ */ React.createElement(
     "button",
@@ -63,24 +75,21 @@ function ManageInternships({
     /* @__PURE__ */ React.createElement("option", { value: "Active" }, "Active"),
     /* @__PURE__ */ React.createElement("option", { value: "Review" }, "Review"),
     /* @__PURE__ */ React.createElement("option", { value: "Closed" }, "Closed")
-  ), /* @__PURE__ */ React.createElement(ChevronDown, { className: "w-4 h-4 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" }))), /* @__PURE__ */ React.createElement("div", { className: "bg-card border border-border rounded-xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 border-b border-border bg-background" }, ["JOB POSTS", "POSTED DATE", "NO. OF APPLICA.", "STATUS", "ACTION"].map((col) => /* @__PURE__ */ React.createElement("span", { key: col, className: "text-[11px] font-semibold text-muted-foreground uppercase tracking-wide" }, col))), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-6 text-center" }, /* @__PURE__ */ React.createElement(Briefcase, { className: "w-8 h-8 text-muted-foreground mx-auto mb-2" }), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-muted-foreground" }, "No internships match your search")) : /* @__PURE__ */ React.createElement("div", { className: "divide-y divide-border" }, filtered.map((row, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-5 py-4 items-center hover:bg-background/60 transition-colors" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "text-sm font-medium text-[#00BFEA] truncate" }, row.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-muted-foreground mt-0.5 truncate" }, row.dept, " Internship")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "text-sm text-foreground" }, row.posted), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-muted-foreground mt-0.5" }, row.ago)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-sm text-foreground" }, row.applicants)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: `inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${row.status === "Active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : row.status === "Review" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-red-50 text-red-600 border-red-200"}` }, row.status)), /* @__PURE__ */ React.createElement("div", { className: "relative flex justify-end" }, /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement(ChevronDown, { className: "w-4 h-4 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" }))), /* @__PURE__ */ React.createElement("div", { className: "bg-card border border-border rounded-xl" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 border-b border-border bg-background rounded-t-xl" }, ["JOB POSTS", "POSTED DATE", "NO. OF APPLICA.", "STATUS", "ACTION"].map((col) => /* @__PURE__ */ React.createElement("span", { key: col, className: "text-[11px] font-semibold text-muted-foreground uppercase tracking-wide" }, col))), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-6 text-center" }, /* @__PURE__ */ React.createElement(Briefcase, { className: "w-8 h-8 text-muted-foreground mx-auto mb-2" }), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-muted-foreground" }, "No internships match your search")) : /* @__PURE__ */ React.createElement("div", { className: "divide-y divide-border" }, filtered.map((row, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: `grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-5 py-4 items-center hover:bg-background/60 transition-colors ${i === filtered.length - 1 ? "rounded-b-xl" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "text-sm font-medium text-[#00BFEA] truncate" }, row.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-muted-foreground mt-0.5 truncate" }, row.dept, " Internship")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "text-sm text-foreground" }, row.posted), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-muted-foreground mt-0.5" }, row.ago)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-sm text-foreground" }, row.applicants)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: `inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${row.status === "Active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : row.status === "Review" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-red-50 text-red-600 border-red-200"}` }, row.status)), /* @__PURE__ */ React.createElement("div", { className: "relative flex justify-end" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setOpenMenu(openMenu === i ? null : i),
-      className: "p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-border/50 transition-colors"
+      className: "p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-border/50 transition-colors cursor-pointer"
     },
     /* @__PURE__ */ React.createElement(MoreVertical, { className: "w-4 h-4" })
-  ), openMenu === i && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-10", onClick: () => setOpenMenu(null) }), /* @__PURE__ */ React.createElement("div", { className: "absolute right-0 top-6 z-20 bg-card border border-border rounded-xl shadow-lg py-1 w-44" }, /* @__PURE__ */ React.createElement(
+  ), openMenu === i && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-40", onClick: () => setOpenMenu(null) }), /* @__PURE__ */ React.createElement("div", { className: `absolute right-0 ${i > 0 && i >= filtered.length - 2 ? "bottom-8" : "top-8"} z-50 bg-card border border-border rounded-xl shadow-xl py-1.5 w-44 divide-y divide-border/40` }, /* @__PURE__ */ React.createElement("div", { className: "py-1" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => {
-        setEditingPost(row);
-        setPostStep(1);
-        setPostForm2({ ...blankForm2, title: row.title, category: row.category, department: row.department, location: row.location, mode: row.mode, duration: row.duration, stipend: row.stipend, openings: String(row.openings), skills: row.skills, description: row.description, responsibilities: row.responsibilities, eligibility: row.eligibility, perks: row.perks || [], minCgpa: row.minCgpa == null ? "" : String(row.minCgpa) });
-        setSection("post");
+        if (onEditInternship) onEditInternship(row);
         setOpenMenu(null);
       },
-      className: "w-full text-left px-4 py-2 text-sm text-foreground hover:bg-background transition-colors"
+      className: "w-full text-left px-4 py-2 text-sm text-foreground hover:bg-background transition-colors cursor-pointer"
     },
     "Edit Internship"
   ), row.status !== "Active" && /* @__PURE__ */ React.createElement(
@@ -90,7 +99,7 @@ function ManageInternships({
         updateJobStatus(row, "Active");
         setOpenMenu(null);
       },
-      className: "w-full text-left px-4 py-2 text-sm text-emerald-600 hover:bg-background transition-colors"
+      className: "w-full text-left px-4 py-2 text-sm text-emerald-600 hover:bg-background transition-colors cursor-pointer"
     },
     "Set to Active"
   ), row.status !== "Review" && /* @__PURE__ */ React.createElement(
@@ -100,7 +109,7 @@ function ManageInternships({
         updateJobStatus(row, "Review");
         setOpenMenu(null);
       },
-      className: "w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-background transition-colors"
+      className: "w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-background transition-colors cursor-pointer"
     },
     "Set to Review"
   ), /* @__PURE__ */ React.createElement(
@@ -111,10 +120,20 @@ function ManageInternships({
         setOpenMenu(null);
       },
       disabled: row.status === "Closed",
-      className: "w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-background transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      className: "w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-background transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
     },
     "Close Job"
-  )))))))));
+  )), /* @__PURE__ */ React.createElement("div", { className: "py-1" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => {
+        deleteJob(row);
+        setOpenMenu(null);
+      },
+      className: "w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+    },
+    "Delete Internship"
+  ))))))))));
 }
 function CompanyPortal({ section, setSection, userInfo, logout }) {
   const updateCandidateStatus = async (name, internshipTitle, status) => {
@@ -193,7 +212,11 @@ function CompanyPortal({ section, setSection, userInfo, logout }) {
         applicants: job.applicants ?? 0, status: (job.status === "Published" || job.status === "Active") ? "Active" : job.status === "Closed" ? "Closed" : "Review",
         stipend: String(job.stipendNum || 0), skills: Array.isArray(job.skills) ? job.skills.join(", ") : (job.skills || ""),
       })));
-    }).catch((error) => { if (active) toast.error(error.message || "Could not load employer data."); });
+    }).catch((error) => {
+      if (active && error?.status !== 401 && error?.message !== "Not authenticated") {
+        toast.error(error.message || "Could not load employer data.");
+      }
+    });
     return () => { active = false; };
   }, []);
   useEffect(() => {
@@ -206,40 +229,141 @@ function CompanyPortal({ section, setSection, userInfo, logout }) {
           applied: applicant.appliedAt ? new Date(applicant.appliedAt).toLocaleDateString() : (applicant.applied || "Recently"),
         })));
       }
-    }).catch((error) => { if (active) toast.error(error.message || "Could not load applicants."); });
+    }).catch((error) => {
+      if (active && error?.status !== 401 && error?.message !== "Not authenticated") {
+        toast.error(error.message || "Could not load applicants.");
+      }
+    });
     return () => { active = false; };
   }, [companyJobs.length]);
   const [companyUpdates, setCompanyUpdates] = useState([]);
   const [newUpdateText, setNewUpdateText] = useState("");
+  const blankForm2 = {
+    title: "",
+    category: "IT",
+    department: "Software Development",
+    location: "",
+    mode: "Hybrid",
+    duration: "2 Months",
+    stipend: "",
+    openings: "1",
+    deadline: "",
+    skills: "",
+    description: "",
+    responsibilities: "",
+    perks: ["Certificate", "Letter of Recommendation"],
+    eligibility: "",
+    minCgpa: "",
+    showSelection: true,
+    selectionSteps: ["Online Assessment", "Technical Interview", "HR Interview"]
+  };
+  const [postForm, setPostForm2] = useState({ ...blankForm2 });
+  const [publishing, setPublishing] = useState(false);
+  const pf = (field) => (val) => setPostForm2((prev) => ({ ...prev, [field]: val }));
+  const pfPerks = (perk) => setPostForm2((prev) => ({
+    ...prev,
+    perks: prev.perks.includes(perk) ? prev.perks.filter((p) => p !== perk) : [...prev.perks, perk]
+  }));
+
+  const startEditInternship = (row) => {
+    setEditingPost(row);
+    const rawStipend = row.stipendNum ?? row.stipendAmount ?? (
+      typeof row.stipend === "string" ? row.stipend.replace(/[^0-9]/g, "") : (row.stipend || 0)
+    );
+    setPostForm2({
+      ...blankForm2,
+      title: row.title || "",
+      category: row.category || "IT",
+      department: row.department || "Software Development",
+      location: row.location || "",
+      mode: row.mode || row.workMode || "Hybrid",
+      duration: row.duration || "2 Months",
+      stipend: String(rawStipend || 0),
+      openings: String(row.openings || "1"),
+      deadline: row.deadline ? (typeof row.deadline === "string" ? row.deadline.split("T")[0] : "") : "",
+      skills: Array.isArray(row.skills) ? row.skills.join(", ") : (row.skills || ""),
+      description: row.description || "",
+      responsibilities: row.responsibilities || "",
+      eligibility: row.eligibility || "",
+      perks: Array.isArray(row.perks) ? row.perks : ["Certificate", "Letter of Recommendation"],
+      minCgpa: row.minCgpa == null ? "" : String(row.minCgpa),
+      showSelection: Boolean(row.selectionSteps && (Array.isArray(row.selectionSteps) ? row.selectionSteps.length : true)),
+      selectionSteps: Array.isArray(row.selectionSteps) && row.selectionSteps.length ? row.selectionSteps : ["Online Assessment", "Technical Interview", "HR Interview"]
+    });
+    setPostStep2(1);
+    setSection("post");
+  };
+
   const handlePublishJob = async () => {
+    if (publishing) return;
     try {
-      for (const [field, label] of [["title", "title"], ["category", "category"], ["department", "department"], ["location", "location"], ["mode", "work mode"], ["duration", "duration"], ["stipend", "monthly stipend (enter 0 if unpaid)"], ["openings", "number of openings"], ["deadline", "application deadline"], ["description", "description"]]) {
-        if (!String(postForm[field] ?? "").trim()) throw new Error(`Enter the ${label} before publishing.`);
+      setPublishing(true);
+      if (!postForm.title.trim()) { setPostStep2(1); throw new Error("Enter the internship title in Step 1."); }
+      if (!postForm.category) { setPostStep2(1); throw new Error("Select a category in Step 1."); }
+      if (!postForm.department) { setPostStep2(1); throw new Error("Select a department in Step 1."); }
+      if (!postForm.mode) { setPostStep2(1); throw new Error("Select a work mode in Step 1."); }
+      if (!postForm.duration) { setPostStep2(1); throw new Error("Select a duration in Step 1."); }
+      if (postForm.stipend === "" || postForm.stipend === null || postForm.stipend === undefined) {
+        setPostStep2(1); throw new Error("Enter the monthly stipend (enter 0 if unpaid) in Step 1.");
       }
-      if (!Number.isFinite(Number(postForm.stipend)) || Number(postForm.stipend) < 0) throw new Error("Enter a valid non-negative stipend amount.");
-      if (!Number.isInteger(Number(postForm.openings)) || Number(postForm.openings) < 1) throw new Error("Enter a valid number of openings.");
+      const numStipend = Number(postForm.stipend);
+      if (isNaN(numStipend) || numStipend < 0) { setPostStep2(1); throw new Error("Enter a valid non-negative stipend amount in Step 1."); }
+      const numOpenings = Number(postForm.openings);
+      if (!Number.isInteger(numOpenings) || numOpenings < 1) { setPostStep2(1); throw new Error("Enter a valid number of openings (at least 1) in Step 1."); }
+      if (!postForm.deadline) { setPostStep2(1); throw new Error("Select an application deadline in Step 1."); }
+      if (!postForm.skills.trim()) { setPostStep2(2); throw new Error("Enter required skills in Step 2."); }
+      if (!postForm.description.trim()) { setPostStep2(2); throw new Error("Enter an internship description in Step 2."); }
+      if (!postForm.responsibilities.trim()) { setPostStep2(2); throw new Error("Enter roles & responsibilities in Step 2."); }
+
+      const locationVal = postForm.location.trim() || (postForm.mode === "Remote" ? "Remote" : "India");
+
       const internshipPayload = {
-        title: postForm.title, category: postForm.category, department: postForm.department,
-        location: postForm.location, mode: postForm.mode, duration: postForm.duration,
-        stipendAmount: Number(postForm.stipend), stipendCurrency: "INR", stipendPeriod: "month", openings: Number(postForm.openings),
-        deadline: postForm.deadline, skills: postForm.skills.split(",").map((value) => value.trim()).filter(Boolean),
-        description: postForm.description, responsibilities: postForm.responsibilities,
-        eligibility: postForm.eligibility, perks: postForm.perks,
-        status: editingPost ? undefined : "published",
+        title: postForm.title.trim(),
+        category: postForm.category,
+        department: postForm.department,
+        location: locationVal,
+        mode: postForm.mode,
+        workMode: postForm.mode,
+        duration: postForm.duration,
+        stipend: numStipend > 0 ? `₹${numStipend.toLocaleString("en-IN")} / month` : "Unpaid",
+        stipendAmount: numStipend,
+        stipendNum: numStipend,
+        stipendCurrency: "INR",
+        stipendPeriod: "month",
+        openings: numOpenings,
+        deadline: postForm.deadline,
+        skills: postForm.skills.split(",").map((value) => value.trim()).filter(Boolean),
+        description: postForm.description.trim(),
+        responsibilities: postForm.responsibilities.trim(),
+        eligibility: postForm.eligibility.trim(),
+        perks: postForm.perks,
+        selectionSteps: postForm.showSelection ? postForm.selectionSteps : [],
+        status: editingPost ? undefined : "Active",
       };
       if (postForm.minCgpa !== "") internshipPayload.minCgpa = Number(postForm.minCgpa);
+
       const saved = editingPost ? await api.updateInternship(editingPost.id, internshipPayload) : await api.createInternship(internshipPayload);
       setCompanyJobs((prev) => [{
-        ...saved, dept: saved.category || "IT", posted: saved.posted || "Today", ago: saved.ago || "Just now", applicants: saved.applicants ?? 0,
-        status: (saved.status === "Published" || saved.status === "Active") ? "Active" : "Review", stipend: String(saved.stipendNum || 0), skills: Array.isArray(saved.skills) ? saved.skills.join(", ") : (saved.skills || ""),
+        ...saved,
+        dept: saved.category || "IT",
+        posted: saved.posted || "Today",
+        ago: saved.ago || "Just now",
+        applicants: saved.applicants ?? 0,
+        status: (saved.status === "Published" || saved.status === "Active") ? "Active" : "Review",
+        stipend: String(saved.stipendNum || saved.stipendAmount || numStipend),
+        skills: Array.isArray(saved.skills) ? saved.skills.join(", ") : (saved.skills || ""),
       }, ...prev.filter((job) => job.id !== saved.id)]);
+
       setEditingPost(null);
       setPostForm2({ ...blankForm2 });
       setPostStep2(1);
       setSection("manage");
+      window.dispatchEvent(new CustomEvent("interndesk:sync"));
       toast.success(editingPost ? "Internship updated successfully! Students notified." : "Internship published successfully! Students can now see and apply.");
     } catch (error) {
       toast.error(error.message || "Could not save this internship.");
+    } finally {
+      setPublishing(false);
     }
   };
   const [activeMessageCandidate, setActiveMessageCandidate] = useState("");
@@ -288,31 +412,6 @@ function CompanyPortal({ section, setSection, userInfo, logout }) {
   const [inviteDraft, setInviteDraft] = useState({ name: "", email: "", role: "Recruiter" });
   const [confirmDanger, setConfirmDanger] = useState(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const blankForm2 = {
-    title: "",
-    category: "",
-    department: "",
-    location: "",
-    mode: "",
-    duration: "",
-    stipend: "",
-    openings: "",
-    deadline: "",
-    skills: "",
-    description: "",
-    responsibilities: "",
-    perks: [],
-    eligibility: "",
-    minCgpa: "",
-    showSelection: true,
-    selectionSteps: ["Online Assessment", "Technical Interview", "HR Interview"]
-  };
-  const [postForm, setPostForm2] = useState({ ...blankForm2 });
-  const pf = (field) => (val) => setPostForm2((prev) => ({ ...prev, [field]: val }));
-  const pfPerks = (perk) => setPostForm2((prev) => ({
-    ...prev,
-    perks: prev.perks.includes(perk) ? prev.perks.filter((p) => p !== perk) : [...prev.perks, perk]
-  }));
   const logoInputRef = useRef(null);
   const coverInputRef = useRef(null);
   const [logoUrl, setLogoUrl] = useState(null);
@@ -482,7 +581,27 @@ function CompanyPortal({ section, setSection, userInfo, logout }) {
       const steps = ["Basic Info", "Details", "Eligibility", "Preview"];
       const label = steps[postStep - 1];
       return /* @__PURE__ */ React.createElement("div", { className: "mb-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-7 h-7 rounded-full bg-primary flex items-center justify-center text-xs font-medium text-white" }, postStep), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-medium text-foreground" }, label)), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-muted-foreground" }, "Step ", postStep, " of ", steps.length)), /* @__PURE__ */ React.createElement("div", { className: "h-1.5 bg-border rounded-full overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-primary rounded-full transition-all duration-300", style: { width: `${postStep / steps.length * 100}%` } })));
-    })(), /* @__PURE__ */ React.createElement("div", { className: `bg-card border border-border rounded-xl p-6 ${postStep === 4 ? "max-w-3xl" : "max-w-2xl"}` }, postStep === 1 && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-medium text-foreground" }, "Basic Information"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Internship Title *"), /* @__PURE__ */ React.createElement("input", { type: "text", value: postForm.title, onChange: (e) => pf("title")(e.target.value), placeholder: "e.g. Software Development Intern", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Category *"), /* @__PURE__ */ React.createElement("select", { value: postForm.category, onChange: (e) => pf("category")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary bg-card" }, /* @__PURE__ */ React.createElement("option", null, "IT"), /* @__PURE__ */ React.createElement("option", null, "NON IT"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Department *"), /* @__PURE__ */ React.createElement("select", { value: postForm.department, onChange: (e) => pf("department")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary bg-card" }, postForm.category === "IT" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("option", null, "Software Development"), /* @__PURE__ */ React.createElement("option", null, "Data Science & AI"), /* @__PURE__ */ React.createElement("option", null, "Full Stack Development"), /* @__PURE__ */ React.createElement("option", null, "Cloud Computing & DevOps"), /* @__PURE__ */ React.createElement("option", null, "Cyber Security"), /* @__PURE__ */ React.createElement("option", null, "UI/UX Design"), /* @__PURE__ */ React.createElement("option", null, "Mobile App Development"), /* @__PURE__ */ React.createElement("option", null, "Database Administration")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("option", null, "Business Development"), /* @__PURE__ */ React.createElement("option", null, "Finance & Accounting"), /* @__PURE__ */ React.createElement("option", null, "Digital Marketing"), /* @__PURE__ */ React.createElement("option", null, "Human Resources"), /* @__PURE__ */ React.createElement("option", null, "Sales & Growth"), /* @__PURE__ */ React.createElement("option", null, "Supply Chain & Operations"), /* @__PURE__ */ React.createElement("option", null, "Graphic Design"), /* @__PURE__ */ React.createElement("option", null, "Content Strategy"))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Location"), /* @__PURE__ */ React.createElement("input", { type: "text", value: postForm.location, onChange: (e) => pf("location")(e.target.value), placeholder: "e.g. Pune, Maharashtra", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Work Mode *"), /* @__PURE__ */ React.createElement("select", { value: postForm.mode, onChange: (e) => pf("mode")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary bg-card" }, /* @__PURE__ */ React.createElement("option", null, "Hybrid"), /* @__PURE__ */ React.createElement("option", null, "Remote"), /* @__PURE__ */ React.createElement("option", null, "On-site")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Duration *"), /* @__PURE__ */ React.createElement("select", { value: postForm.duration, onChange: (e) => pf("duration")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary bg-card" }, /* @__PURE__ */ React.createElement("option", null, "2 Months"), /* @__PURE__ */ React.createElement("option", null, "3 Months"), /* @__PURE__ */ React.createElement("option", null, "4 Months"), /* @__PURE__ */ React.createElement("option", null, "6 Months")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Number of Openings"), /* @__PURE__ */ React.createElement("input", { type: "number", value: postForm.openings, onChange: (e) => pf("openings")(e.target.value), placeholder: "e.g. 5", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Application Deadline *"), /* @__PURE__ */ React.createElement("input", { type: "date", value: postForm.deadline, onChange: (e) => pf("deadline")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" }))), /* @__PURE__ */ React.createElement("button", { onClick: () => setPostStep2(2), className: "px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors" }, "Next: Internship Details")), postStep === 2 && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-medium text-foreground" }, "Internship Details"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Required Skills *"), /* @__PURE__ */ React.createElement("input", { type: "text", value: postForm.skills, onChange: (e) => pf("skills")(e.target.value), placeholder: "e.g. Python, Java, React (comma separated)", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Internship Description *"), /* @__PURE__ */ React.createElement("textarea", { rows: 4, value: postForm.description, onChange: (e) => pf("description")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors resize-none", placeholder: "Describe the internship role..." })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Roles & Responsibilities *"), /* @__PURE__ */ React.createElement("textarea", { rows: 4, value: postForm.responsibilities, onChange: (e) => pf("responsibilities")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors resize-none", placeholder: "List the key responsibilities for this internship..." })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-2" }, "Benefits & Perks"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, ["Certificate", "Letter of Recommendation", "Pre-Placement Offer", "Mentorship", "Flexible Hours", "Free Meals"].map((b) => /* @__PURE__ */ React.createElement("label", { key: b, className: `flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${postForm.perks.includes(b) ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary"}` }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: postForm.perks.includes(b), onChange: () => pfPerks(b), className: "accent-primary" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-medium" }, b))))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setPostStep2(1), className: "px-5 py-2.5 border border-border text-foreground rounded-xl text-sm font-medium hover:border-primary hover:text-primary transition-colors" }, "Back"), /* @__PURE__ */ React.createElement("button", { onClick: () => setPostStep2(3), className: "px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors" }, "Next: Eligibility"))), postStep === 3 && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-medium text-foreground" }, "Eligibility Criteria"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Who can apply?"), /* @__PURE__ */ React.createElement("textarea", { rows: 3, value: postForm.eligibility, onChange: (e) => pf("eligibility")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors resize-none", placeholder: "e.g. B.Tech/M.Tech in CS/IT, MBA students with tech background..." })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Minimum CGPA"), /* @__PURE__ */ React.createElement("input", { type: "number", value: postForm.minCgpa, onChange: (e) => pf("minCgpa")(e.target.value), step: "0.1", max: "10", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("label", { className: "text-sm font-medium text-foreground" }, "Selection Process"), /* @__PURE__ */ React.createElement(
+    })(), /* @__PURE__ */ React.createElement("div", { className: `bg-card border border-border rounded-xl p-6 ${postStep === 4 ? "max-w-3xl" : "max-w-2xl"}` }, postStep === 1 && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-medium text-foreground" }, "Basic Information"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Internship Title *"), /* @__PURE__ */ React.createElement("input", { type: "text", value: postForm.title, onChange: (e) => pf("title")(e.target.value), placeholder: "e.g. Software Development Intern", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Category *"), /* @__PURE__ */ React.createElement("select", { value: postForm.category, onChange: (e) => pf("category")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary bg-card" }, /* @__PURE__ */ React.createElement("option", null, "IT"), /* @__PURE__ */ React.createElement("option", null, "NON IT"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Department *"), /* @__PURE__ */ React.createElement("select", { value: postForm.department, onChange: (e) => pf("department")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary bg-card" }, postForm.category === "IT" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("option", null, "Software Development"), /* @__PURE__ */ React.createElement("option", null, "Data Science & AI"), /* @__PURE__ */ React.createElement("option", null, "Full Stack Development"), /* @__PURE__ */ React.createElement("option", null, "Cloud Computing & DevOps"), /* @__PURE__ */ React.createElement("option", null, "Cyber Security"), /* @__PURE__ */ React.createElement("option", null, "UI/UX Design"), /* @__PURE__ */ React.createElement("option", null, "Mobile App Development"), /* @__PURE__ */ React.createElement("option", null, "Database Administration")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("option", null, "Business Development"), /* @__PURE__ */ React.createElement("option", null, "Finance & Accounting"), /* @__PURE__ */ React.createElement("option", null, "Digital Marketing"), /* @__PURE__ */ React.createElement("option", null, "Human Resources"), /* @__PURE__ */ React.createElement("option", null, "Sales & Growth"), /* @__PURE__ */ React.createElement("option", null, "Supply Chain & Operations"), /* @__PURE__ */ React.createElement("option", null, "Graphic Design"), /* @__PURE__ */ React.createElement("option", null, "Content Strategy"))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Location"), /* @__PURE__ */ React.createElement("input", { type: "text", value: postForm.location, onChange: (e) => pf("location")(e.target.value), placeholder: "e.g. Pune, Maharashtra", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Work Mode *"), /* @__PURE__ */ React.createElement("select", { value: postForm.mode, onChange: (e) => pf("mode")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary bg-card" }, /* @__PURE__ */ React.createElement("option", null, "Hybrid"), /* @__PURE__ */ React.createElement("option", null, "Remote"), /* @__PURE__ */ React.createElement("option", null, "On-site")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Duration *"), /* @__PURE__ */ React.createElement("select", { value: postForm.duration, onChange: (e) => pf("duration")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary bg-card" }, /* @__PURE__ */ React.createElement("option", null, "2 Months"), /* @__PURE__ */ React.createElement("option", null, "3 Months"), /* @__PURE__ */ React.createElement("option", null, "4 Months"), /* @__PURE__ */ React.createElement("option", null, "6 Months"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Monthly Stipend (\u20B9) *"), /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("span", { className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground" }, "\u20B9"), /* @__PURE__ */ React.createElement("input", { type: "number", min: "0", value: postForm.stipend, onChange: (e) => pf("stipend")(e.target.value), placeholder: "e.g. 15000 (0 if unpaid)", className: "w-full pl-8 pr-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Number of Openings"), /* @__PURE__ */ React.createElement("input", { type: "number", value: postForm.openings, onChange: (e) => pf("openings")(e.target.value), placeholder: "e.g. 5", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Application Deadline *"), /* @__PURE__ */ React.createElement("input", { type: "date", value: postForm.deadline, onChange: (e) => pf("deadline")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" }))), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+  if (!postForm.title.trim()) { toast.error("Please enter the internship title."); return; }
+  if (postForm.stipend === "" || postForm.stipend === null || isNaN(Number(postForm.stipend)) || Number(postForm.stipend) < 0) {
+    toast.error("Please enter the monthly stipend (enter 0 if unpaid).");
+    return;
+  }
+  if (!postForm.openings || Number(postForm.openings) < 1) {
+    toast.error("Please enter a valid number of openings.");
+    return;
+  }
+  if (!postForm.deadline) {
+    toast.error("Please select an application deadline.");
+    return;
+  }
+  setPostStep2(2);
+}, className: "px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors" }, "Next: Internship Details")), postStep === 2 && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-medium text-foreground" }, "Internship Details"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Required Skills *"), /* @__PURE__ */ React.createElement("input", { type: "text", value: postForm.skills, onChange: (e) => pf("skills")(e.target.value), placeholder: "e.g. Python, Java, React (comma separated)", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Internship Description *"), /* @__PURE__ */ React.createElement("textarea", { rows: 4, value: postForm.description, onChange: (e) => pf("description")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors resize-none", placeholder: "Describe the internship role..." })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Roles & Responsibilities *"), /* @__PURE__ */ React.createElement("textarea", { rows: 4, value: postForm.responsibilities, onChange: (e) => pf("responsibilities")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors resize-none", placeholder: "List the key responsibilities for this internship..." })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-2" }, "Benefits & Perks"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, ["Certificate", "Letter of Recommendation", "Pre-Placement Offer", "Mentorship", "Flexible Hours", "Free Meals"].map((b) => /* @__PURE__ */ React.createElement("label", { key: b, className: `flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${postForm.perks.includes(b) ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary"}` }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: postForm.perks.includes(b), onChange: () => pfPerks(b), className: "accent-primary" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-medium" }, b))))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setPostStep2(1), className: "px-5 py-2.5 border border-border text-foreground rounded-xl text-sm font-medium hover:border-primary hover:text-primary transition-colors" }, "Back"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+  if (!postForm.skills.trim()) { toast.error("Please enter required skills."); return; }
+  if (!postForm.description.trim()) { toast.error("Please enter the internship description."); return; }
+  if (!postForm.responsibilities.trim()) { toast.error("Please enter roles & responsibilities."); return; }
+  setPostStep2(3);
+}, className: "px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors" }, "Next: Eligibility"))), postStep === 3 && /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-medium text-foreground" }, "Eligibility Criteria"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Who can apply?"), /* @__PURE__ */ React.createElement("textarea", { rows: 3, value: postForm.eligibility, onChange: (e) => pf("eligibility")(e.target.value), className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors resize-none", placeholder: "e.g. B.Tech/M.Tech in CS/IT, MBA students with tech background..." })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-sm font-medium text-foreground mb-1.5" }, "Minimum CGPA"), /* @__PURE__ */ React.createElement("input", { type: "number", value: postForm.minCgpa, onChange: (e) => pf("minCgpa")(e.target.value), step: "0.1", max: "10", className: "w-full px-4 py-2.5 border border-border rounded-xl text-sm outline-none focus:border-primary transition-colors" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("label", { className: "text-sm font-medium text-foreground" }, "Selection Process"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -511,9 +630,10 @@ function CompanyPortal({ section, setSection, userInfo, logout }) {
       const stipendFormatted = postForm.stipend ? `\u20B9${Number(postForm.stipend).toLocaleString("en-IN")}/mo` : "\u2014";
       return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-5 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl" }, /* @__PURE__ */ React.createElement(Eye, { className: "w-4 h-4 text-amber-600 flex-shrink-0" }), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-amber-700 font-medium" }, "This is a preview \u2014 exactly how students will see your listing")), /* @__PURE__ */ React.createElement("div", { className: "border border-border rounded-xl overflow-hidden mb-5" }, /* @__PURE__ */ React.createElement("div", { className: "p-5 border-b border-border" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "w-14 h-14 rounded-xl bg-[#007CC3] flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-white font-medium text-lg" }, "IN")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-medium text-foreground" }, postForm.title || "Internship Title"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-muted-foreground" }, resolvedCompanyName, " \xB7 ", postForm.department), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 mt-2" }, postForm.location && /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1 text-xs text-muted-foreground" }, /* @__PURE__ */ React.createElement(MapPin, { className: "w-3 h-3" }), postForm.location), /* @__PURE__ */ React.createElement(ModeBadge, { mode: postForm.mode }), /* @__PURE__ */ React.createElement(CategoryBadge, { category: postForm.category }))), /* @__PURE__ */ React.createElement("button", { className: "px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-medium flex-shrink-0" }, "Apply Now"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-4 divide-x divide-border border-b border-border" }, [
         { icon: Clock, label: "Duration", value: postForm.duration },
+        { icon: DollarSign, label: "Stipend", value: stipendFormatted },
         { icon: Users, label: "Openings", value: postForm.openings || "\u2014" },
         { icon: Calendar, label: "Deadline", value: deadlineFormatted }
-      ].map((item) => /* @__PURE__ */ React.createElement("div", { key: item.label, className: "px-4 py-3 text-center" }, /* @__PURE__ */ React.createElement(item.icon, { className: "w-4 h-4 text-primary mx-auto mb-1" }), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-muted-foreground" }, item.label), /* @__PURE__ */ React.createElement("p", { className: "text-xs font-medium text-foreground mt-0.5" }, item.value)))), /* @__PURE__ */ React.createElement("div", { className: "p-5 space-y-5" }, postForm.description && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "About the Internship"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-muted-foreground leading-relaxed" }, postForm.description)), respLines.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Roles & Responsibilities"), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1.5" }, respLines.map((r, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "flex items-start gap-2 text-sm text-muted-foreground" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" }), r)))), skillsList.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Required Skills"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, skillsList.map((s) => /* @__PURE__ */ React.createElement("span", { key: s, className: "px-2.5 py-1 bg-background border border-border rounded-lg text-xs text-foreground" }, s)))), postForm.eligibility && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Eligibility"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-muted-foreground" }, postForm.eligibility), postForm.minCgpa && /* @__PURE__ */ React.createElement("p", { className: "text-xs text-muted-foreground mt-1" }, "Minimum CGPA: ", /* @__PURE__ */ React.createElement("span", { className: "font-medium text-foreground" }, postForm.minCgpa))), postForm.perks.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Perks & Benefits"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, postForm.perks.map((p) => /* @__PURE__ */ React.createElement("span", { key: p, className: "flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700" }, /* @__PURE__ */ React.createElement(CheckCircle, { className: "w-3 h-3" }), p)))), postForm.showSelection && postForm.selectionSteps.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Selection Process"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, postForm.selectionSteps.map((s, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: s }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5 px-2.5 py-1 bg-primary/5 border border-primary/20 rounded-lg text-xs text-primary" }, /* @__PURE__ */ React.createElement("span", { className: "w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[9px] font-medium" }, i + 1), s), i < postForm.selectionSteps.length - 1 && /* @__PURE__ */ React.createElement(ArrowRight, { className: "w-3 h-3 text-muted-foreground" }))))))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setPostStep2(3), className: "px-5 py-2.5 border border-border text-foreground rounded-xl text-sm font-medium hover:border-primary hover:text-primary transition-colors" }, "Edit Details"), /* @__PURE__ */ React.createElement("button", { onClick: handlePublishJob, className: "px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2 cursor-pointer" }, /* @__PURE__ */ React.createElement(CheckCircle, { className: "w-4 h-4" }), isEdit ? "Save Changes" : "Publish Internship")));
+      ].map((item) => /* @__PURE__ */ React.createElement("div", { key: item.label, className: "px-4 py-3 text-center" }, /* @__PURE__ */ React.createElement(item.icon, { className: "w-4 h-4 text-primary mx-auto mb-1" }), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-muted-foreground" }, item.label), /* @__PURE__ */ React.createElement("p", { className: "text-xs font-medium text-foreground mt-0.5" }, item.value)))), /* @__PURE__ */ React.createElement("div", { className: "p-5 space-y-5" }, postForm.description && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "About the Internship"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-muted-foreground leading-relaxed" }, postForm.description)), respLines.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Roles & Responsibilities"), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1.5" }, respLines.map((r, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "flex items-start gap-2 text-sm text-muted-foreground" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" }), r)))), skillsList.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Required Skills"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, skillsList.map((s) => /* @__PURE__ */ React.createElement("span", { key: s, className: "px-2.5 py-1 bg-background border border-border rounded-lg text-xs text-foreground" }, s)))), postForm.eligibility && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Eligibility"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-muted-foreground" }, postForm.eligibility), postForm.minCgpa && /* @__PURE__ */ React.createElement("p", { className: "text-xs text-muted-foreground mt-1" }, "Minimum CGPA: ", /* @__PURE__ */ React.createElement("span", { className: "font-medium text-foreground" }, postForm.minCgpa))), postForm.perks.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Perks & Benefits"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, postForm.perks.map((p) => /* @__PURE__ */ React.createElement("span", { key: p, className: "flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700" }, /* @__PURE__ */ React.createElement(CheckCircle, { className: "w-3 h-3" }), p)))), postForm.showSelection && postForm.selectionSteps.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-medium text-foreground mb-2" }, "Selection Process"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, postForm.selectionSteps.map((s, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: s }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5 px-2.5 py-1 bg-primary/5 border border-primary/20 rounded-lg text-xs text-primary" }, /* @__PURE__ */ React.createElement("span", { className: "w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[9px] font-medium" }, i + 1), s), i < postForm.selectionSteps.length - 1 && /* @__PURE__ */ React.createElement(ArrowRight, { className: "w-3 h-3 text-muted-foreground" }))))))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setPostStep2(3), className: "px-5 py-2.5 border border-border text-foreground rounded-xl text-sm font-medium hover:border-primary hover:text-primary transition-colors" }, "Edit Details"), /* @__PURE__ */ React.createElement("button", { onClick: handlePublishJob, disabled: publishing, className: `px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2 cursor-pointer ${publishing ? "opacity-60 cursor-not-allowed" : ""}` }, /* @__PURE__ */ React.createElement(CheckCircle, { className: "w-4 h-4" }), publishing ? "Publishing\u2026" : (isEdit ? "Save Changes" : "Publish Internship"))));
     })()));
   })(), section === "applicants" && (() => {
     const resumeScores = Object.fromEntries(companyApplicants.map((applicant) => [applicant.name, null]));
@@ -657,7 +777,7 @@ function CompanyPortal({ section, setSection, userInfo, logout }) {
         item.label
       ))))));
     })))));
-  })(), section === "manage" && /* @__PURE__ */ React.createElement(ManageInternships, { companyJobs, setCompanyJobs, setSection, setSelectedInternship, setEditingPost }), section === "company-profile" && /* @__PURE__ */ React.createElement("div", null, cropSrc && /* @__PURE__ */ React.createElement(
+  })(), section === "manage" && /* @__PURE__ */ React.createElement(ManageInternships, { companyJobs, setCompanyJobs, setSection, setSelectedInternship, onEditInternship: startEditInternship }), section === "company-profile" && /* @__PURE__ */ React.createElement("div", null, cropSrc && /* @__PURE__ */ React.createElement(
     ImageCropModal,
     {
       imageSrc: cropSrc,
